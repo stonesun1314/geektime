@@ -9,7 +9,33 @@
 import UIKit
 import SnapKit
 
-class LoginViewController: BaseViewController {
+protocol ValidatesPhoneNumer {
+    func validatePhoneNumber(_ phoneNumber: String) -> Bool
+}
+
+protocol ValidatesPassword {
+    func validatePassword(_ password: String) -> Bool
+}
+
+extension ValidatesPhoneNumer {
+    func validatePhoneNumber(_ phoneNumber: String) -> Bool {
+        if phoneNumber.count != 11 {
+            return false
+        }
+        return true
+    }
+}
+
+extension ValidatesPassword {
+    func validatePassword(_ password: String) -> Bool {
+        if password.count < 6 || password.count > 12 {
+            return false
+        }
+        return true
+    }
+}
+
+class LoginViewController: BaseViewController, ValidatesPassword, ValidatesPhoneNumer {
     
     var phoneTextField: UITextField!
     var passwordTextField: UITextField!
@@ -60,7 +86,7 @@ class LoginViewController: BaseViewController {
         phoneTextField.snp.makeConstraints { (make) in
             make.left.equalToSuperview().offset(20)
             make.right.equalToSuperview().offset(-20)
-            make.top.equalTo(logoView.snp_bottom).offset(20)
+            make.top.equalTo(phoneTextField.snp_bottom).offset(20)
         }
         
         let loginButton = UIButton(type: .custom)
@@ -84,7 +110,19 @@ class LoginViewController: BaseViewController {
     }
     
     @objc func didClickLoginButton() {
-        NSLog("didClickLoginButton")
+        if validatePhoneNumber(phoneTextField.text ?? "") && validatePassword(passwordTextField.text ?? "") {
+            
+        } else {
+            self.showToast()
+        }
+    }
+    
+    func showToast() {
+        let alertVC = UIAlertController(title: "提示", message: "用户名或密码错误", preferredStyle: .alert)
+        present(alertVC, animated: true, completion: nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            alertVC.dismiss(animated: true, completion: nil)
+        }
     }
 
     /*

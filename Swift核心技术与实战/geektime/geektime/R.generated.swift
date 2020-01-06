@@ -11,11 +11,100 @@ import UIKit
 struct R: Rswift.Validatable {
   fileprivate static let applicationLocale = hostingBundle.preferredLocalizations.first.flatMap(Locale.init) ?? Locale.current
   fileprivate static let hostingBundle = Bundle(for: R.Class.self)
-  
+
+  /// Find first language and bundle for which the table exists
+  fileprivate static func localeBundle(tableName: String, preferredLanguages: [String]) -> (Foundation.Locale, Foundation.Bundle)? {
+    // Filter preferredLanguages to localizations, use first locale
+    var languages = preferredLanguages
+      .map(Locale.init)
+      .prefix(1)
+      .flatMap { locale -> [String] in
+        if hostingBundle.localizations.contains(locale.identifier) {
+          if let language = locale.languageCode, hostingBundle.localizations.contains(language) {
+            return [locale.identifier, language]
+          } else {
+            return [locale.identifier]
+          }
+        } else if let language = locale.languageCode, hostingBundle.localizations.contains(language) {
+          return [language]
+        } else {
+          return []
+        }
+      }
+
+    // If there's no languages, use development language as backstop
+    if languages.isEmpty {
+      if let developmentLocalization = hostingBundle.developmentLocalization {
+        languages = [developmentLocalization]
+      }
+    } else {
+      // Insert Base as second item (between locale identifier and languageCode)
+      languages.insert("Base", at: 1)
+
+      // Add development language as backstop
+      if let developmentLocalization = hostingBundle.developmentLocalization {
+        languages.append(developmentLocalization)
+      }
+    }
+
+    // Find first language for which table exists
+    // Note: key might not exist in chosen language (in that case, key will be shown)
+    for language in languages {
+      if let lproj = hostingBundle.url(forResource: language, withExtension: "lproj"),
+         let lbundle = Bundle(url: lproj)
+      {
+        let strings = lbundle.url(forResource: tableName, withExtension: "strings")
+        let stringsdict = lbundle.url(forResource: tableName, withExtension: "stringsdict")
+
+        if strings != nil || stringsdict != nil {
+          return (Locale(identifier: language), lbundle)
+        }
+      }
+    }
+
+    // If table is available in main bundle, don't look for localized resources
+    let strings = hostingBundle.url(forResource: tableName, withExtension: "strings", subdirectory: nil, localization: nil)
+    let stringsdict = hostingBundle.url(forResource: tableName, withExtension: "stringsdict", subdirectory: nil, localization: nil)
+
+    if strings != nil || stringsdict != nil {
+      return (applicationLocale, hostingBundle)
+    }
+
+    // If table is not found for requested languages, key will be shown
+    return nil
+  }
+
+  /// Load string from Info.plist file
+  fileprivate static func infoPlistString(path: [String], key: String) -> String? {
+    var dict = hostingBundle.infoDictionary
+    for step in path {
+      guard let obj = dict?[step] as? [String: Any] else { return nil }
+      dict = obj
+    }
+    return dict?[key] as? String
+  }
+
   static func validate() throws {
     try intern.validate()
   }
-  
+
+  #if os(iOS) || os(tvOS)
+  /// This `R.storyboard` struct is generated, and contains static references to 1 storyboards.
+  struct storyboard {
+    /// Storyboard `LaunchScreen`.
+    static let launchScreen = _R.storyboard.launchScreen()
+
+    #if os(iOS) || os(tvOS)
+    /// `UIStoryboard(name: "LaunchScreen", bundle: ...)`
+    static func launchScreen(_: Void = ()) -> UIKit.UIStoryboard {
+      return UIKit.UIStoryboard(resource: R.storyboard.launchScreen)
+    }
+    #endif
+
+    fileprivate init() {}
+  }
+  #endif
+
   /// This `R.file` struct is generated, and contains static references to 19 files.
   struct file {
     /// Resource file `book@2x.png`.
@@ -56,124 +145,124 @@ struct R: Rswift.Validatable {
     static let mine_selected2xPng = Rswift.FileResource(bundle: R.hostingBundle, name: "mine_selected@2x", pathExtension: "png")
     /// Resource file `student@2x.png`.
     static let student2xPng = Rswift.FileResource(bundle: R.hostingBundle, name: "student@2x", pathExtension: "png")
-    
+
     /// `bundle.url(forResource: "book@2x", withExtension: "png")`
     static func book2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.book2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "defaultAvatar@2x", withExtension: "jpg")`
     static func defaultAvatar2xJpg(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.defaultAvatar2xJpg
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "detailBg@2x", withExtension: "png")`
     static func detailBg2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.detailBg2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "home@2x", withExtension: "png")`
     static func home2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.home2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "home_selected@2x", withExtension: "png")`
     static func home_selected2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.home_selected2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "icon_between@2x", withExtension: "png")`
     static func icon_between2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.icon_between2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "icon_cal@2x", withExtension: "png")`
     static func icon_cal2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.icon_cal2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "icon_column@2x", withExtension: "png")`
     static func icon_column2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.icon_column2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "icon_course@2x", withExtension: "png")`
     static func icon_course2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.icon_course2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "icon_document@2x", withExtension: "png")`
     static func icon_document2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.icon_document2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "icon_life@2x", withExtension: "png")`
     static func icon_life2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.icon_life2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "icon_live@2x", withExtension: "png")`
     static func icon_live2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.icon_live2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "icon_phone@2x", withExtension: "png")`
     static func icon_phone2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.icon_phone2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "icon_pwd@2x", withExtension: "png")`
     static func icon_pwd2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.icon_pwd2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "icon_right_arrow@2x", withExtension: "png")`
     static func icon_right_arrow2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.icon_right_arrow2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "logo@2x", withExtension: "png")`
     static func logo2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.logo2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "mine@2x", withExtension: "png")`
     static func mine2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.mine2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "mine_selected@2x", withExtension: "png")`
     static func mine_selected2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.mine_selected2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     /// `bundle.url(forResource: "student@2x", withExtension: "png")`
     static func student2xPng(_: Void = ()) -> Foundation.URL? {
       let fileResource = R.file.student2xPng
       return fileResource.bundle.url(forResource: fileResource)
     }
-    
+
     fileprivate init() {}
   }
-  
+
   /// This `R.image` struct is generated, and contains static references to 19 images.
   struct image {
     /// Image `book`.
@@ -214,157 +303,190 @@ struct R: Rswift.Validatable {
     static let mine = Rswift.ImageResource(bundle: R.hostingBundle, name: "mine")
     /// Image `student`.
     static let student = Rswift.ImageResource(bundle: R.hostingBundle, name: "student")
-    
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "book", bundle: ..., traitCollection: ...)`
     static func book(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.book, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "defaultAvatar.jpg", bundle: ..., traitCollection: ...)`
     static func defaultAvatarJpg(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.defaultAvatarJpg, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "detailBg", bundle: ..., traitCollection: ...)`
     static func detailBg(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.detailBg, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "home", bundle: ..., traitCollection: ...)`
     static func home(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.home, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "home_selected", bundle: ..., traitCollection: ...)`
     static func home_selected(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.home_selected, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "icon_between", bundle: ..., traitCollection: ...)`
     static func icon_between(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.icon_between, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "icon_cal", bundle: ..., traitCollection: ...)`
     static func icon_cal(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.icon_cal, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "icon_column", bundle: ..., traitCollection: ...)`
     static func icon_column(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.icon_column, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "icon_course", bundle: ..., traitCollection: ...)`
     static func icon_course(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.icon_course, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "icon_document", bundle: ..., traitCollection: ...)`
     static func icon_document(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.icon_document, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "icon_life", bundle: ..., traitCollection: ...)`
     static func icon_life(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.icon_life, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "icon_live", bundle: ..., traitCollection: ...)`
     static func icon_live(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.icon_live, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "icon_phone", bundle: ..., traitCollection: ...)`
     static func icon_phone(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.icon_phone, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "icon_pwd", bundle: ..., traitCollection: ...)`
     static func icon_pwd(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.icon_pwd, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "icon_right_arrow", bundle: ..., traitCollection: ...)`
     static func icon_right_arrow(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.icon_right_arrow, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "logo", bundle: ..., traitCollection: ...)`
     static func logo(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.logo, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "mine", bundle: ..., traitCollection: ...)`
     static func mine(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.mine, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "mine_selected", bundle: ..., traitCollection: ...)`
     static func mine_selected(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.mine_selected, compatibleWith: traitCollection)
     }
-    
+    #endif
+
+    #if os(iOS) || os(tvOS)
     /// `UIImage(named: "student", bundle: ..., traitCollection: ...)`
     static func student(compatibleWith traitCollection: UIKit.UITraitCollection? = nil) -> UIKit.UIImage? {
       return UIKit.UIImage(resource: R.image.student, compatibleWith: traitCollection)
     }
-    
+    #endif
+
     fileprivate init() {}
   }
-  
-  /// This `R.storyboard` struct is generated, and contains static references to 1 storyboards.
-  struct storyboard {
-    /// Storyboard `LaunchScreen`.
-    static let launchScreen = _R.storyboard.launchScreen()
-    
-    /// `UIStoryboard(name: "LaunchScreen", bundle: ...)`
-    static func launchScreen(_: Void = ()) -> UIKit.UIStoryboard {
-      return UIKit.UIStoryboard(resource: R.storyboard.launchScreen)
-    }
-    
-    fileprivate init() {}
-  }
-  
+
   fileprivate struct intern: Rswift.Validatable {
     fileprivate static func validate() throws {
       try _R.validate()
     }
-    
+
     fileprivate init() {}
   }
-  
+
   fileprivate class Class {}
-  
+
   fileprivate init() {}
 }
 
 struct _R: Rswift.Validatable {
   static func validate() throws {
+    #if os(iOS) || os(tvOS)
     try storyboard.validate()
+    #endif
   }
-  
+
+  #if os(iOS) || os(tvOS)
   struct storyboard: Rswift.Validatable {
     static func validate() throws {
+      #if os(iOS) || os(tvOS)
       try launchScreen.validate()
+      #endif
     }
-    
+
+    #if os(iOS) || os(tvOS)
     struct launchScreen: Rswift.StoryboardResourceWithInitialControllerType, Rswift.Validatable {
       typealias InitialController = UIKit.UIViewController
-      
+
       let bundle = R.hostingBundle
       let name = "LaunchScreen"
-      
+
       static func validate() throws {
-        if #available(iOS 11.0, *) {
+        if #available(iOS 11.0, tvOS 11.0, *) {
         }
       }
-      
+
       fileprivate init() {}
     }
-    
+    #endif
+
     fileprivate init() {}
   }
-  
+  #endif
+
   fileprivate init() {}
 }
